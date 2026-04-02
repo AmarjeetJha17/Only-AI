@@ -4,6 +4,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import joblib
+import shap
+import numpy as np
 
 st.set_page_config(page_title="Student Dropout Live Demo", page_icon="🎓", layout="wide")
 
@@ -41,13 +43,63 @@ if page == "🏠 Home":
     with c3: st.metric("Dropout Rate", f"{(df['Dropout_Status']=='Dropout').mean()*100:.2f}%")
     with c4: st.metric("Avg Age", f"{df['Age'].mean():.2f}")
 
+    # Feature Importance Section
+    st.subheader("🎯 Top Features Influencing Dropout")
+    feature_importance = {
+        'Feature': [
+            'Socioeconomic Status',
+            'School Type (Government)',
+            'School Type (Private)',
+            'Standard',
+            'Infrastructure'
+        ],
+        'Importance': [0.1764, 0.1117, 0.0774, -0.0183, -0.0177],
+        'Type': [
+            'ordinal__Socioeconomic_Status',
+            'onehot__School_Type_Government',
+            'onehot__School_Type_Private',
+            'num__Standard',
+            'ordinal__Infrastructure'
+        ]
+    }
+    
+    imp_df = pd.DataFrame(feature_importance)
+    imp_df['Impact'] = imp_df['Importance'].apply(
+        lambda x: '🔴 Increases Dropout Risk' if x > 0 else '🟢 Reduces Dropout Risk'
+    )
+    imp_df['Abs_Importance'] = imp_df['Importance'].abs()
+    imp_df = imp_df.sort_values('Abs_Importance', ascending=False)
+    
+    col_a, col_b = st.columns([2, 1])
+    with col_a:
+        fig_imp = px.bar(
+            imp_df, 
+            x='Importance', 
+            y='Feature', 
+            orientation='h',
+            color='Importance',
+            color_continuous_scale=['green', 'yellow', 'red'],
+            color_continuous_midpoint=0,
+            title='Feature Importance (Coefficients)',
+            labels={'Importance': 'Coefficient Value', 'Feature': 'Feature Name'}
+        )
+        fig_imp.update_layout(yaxis={'categoryorder': 'total ascending'}, height=300)
+        st.plotly_chart(fig_imp, use_container_width=True)
+    
+    with col_b:
+        st.dataframe(
+            imp_df[['Feature', 'Importance', 'Impact']].round(4),
+            use_container_width=True,
+            hide_index=True
+        )
+
     st.subheader("Sample Data")
     st.dataframe(df.head(10), use_container_width=True)
 
 # ====================== FULL EDA ======================
 elif page == "📊 Full EDA":
     st.title("📊 Full Exploratory Data Analysis")
-    tab1, tab2, tab3, tab4 = st.tabs(["Distributions", "Categorical", "vs Target", "Correlation"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Distributions", "Categorical", "vs Target", "Correlation", "Feature Importance"])
     
     with tab1:
         st.subheader("Age & Standard Distribution")
@@ -80,6 +132,66 @@ elif page == "📊 Full EDA":
         fig = go.Figure(data=go.Heatmap(z=corr.values, x=corr.columns, y=corr.columns,
                                         colorscale='RdYlBu_r', text=corr.values, texttemplate="%{text}"))
         st.plotly_chart(fig, use_container_width=True)
+    
+    with tab5:
+        st.subheader("🎯 Model Feature Importance")
+        st.markdown("**These are the most influential features in predicting student dropout:**")
+        
+        feature_importance = {
+            'Feature': [
+                'Socioeconomic Status',
+                'School Type (Government)',
+                'School Type (Private)',
+                'Standard',
+                'Infrastructure'
+            ],
+            'Coefficient': [0.1764, 0.1117, 0.0774, -0.0183, -0.0177],
+            'Encoded_Name': [
+                'ordinal__Socioeconomic_Status',
+                'onehot__School_Type_Government',
+                'onehot__School_Type_Private',
+                'num__Standard',
+                'ordinal__Infrastructure'
+            ]
+        }
+        
+        imp_df = pd.DataFrame(feature_importance)
+        imp_df['Impact'] = imp_df['Coefficient'].apply(
+            lambda x: '🔴 Increases Dropout Risk' if x > 0 else '🟢 Reduces Dropout Risk'
+        )
+        imp_df['Abs_Coefficient'] = imp_df['Coefficient'].abs()
+        imp_df_sorted = imp_df.sort_values('Abs_Coefficient', ascending=False)
+        
+        # Bar chart
+        fig_imp = px.bar(
+            imp_df_sorted, 
+            x='Coefficient', 
+            y='Feature', 
+            orientation='h',
+            color='Coefficient',
+            color_continuous_scale=['green', 'yellow', 'red'],
+            color_continuous_midpoint=0,
+            title='Feature Coefficients from Trained Model',
+            labels={'Coefficient': 'Coefficient Value', 'Feature': 'Feature Name'},
+            text='Coefficient'
+        )
+        fig_imp.update_traces(texttemplate='%{text:.4f}', textposition='outside')
+        fig_imp.update_layout(yaxis={'categoryorder': 'total ascending'}, height=400)
+        st.plotly_chart(fig_imp, use_container_width=True)
+        
+        # Data table
+        st.dataframe(
+            imp_df_sorted[['Feature', 'Coefficient', 'Impact', 'Encoded_Name']].reset_index(drop=True),
+            use_container_width=True
+        )
+        
+        st.info("""
+        **Interpretation:**
+        - **Positive coefficients** (red bars): Higher values increase dropout probability
+        - **Negative coefficients** (green bars): Higher values decrease dropout probability
+        - **Socioeconomic Status** has the strongest influence on dropout predictions
+        """)
+        
 
 # ====================== POWER BI DASHBOARD ======================
 elif page == "📊 Power BI Dashboard":
@@ -146,13 +258,63 @@ elif page == "🔮 Predict":
         }])
         
         pred = model.predict(input_df)[0]
-        proba = model.predict_proba(input_df)[0][1]
+        proba_values = model.predict_proba(input_df)[0]
+        class_probability = dict(zip(model.classes_, proba_values))
+        dropout_probability = class_probability.get('Dropout', max(proba_values))
         
         st.success("✅ Prediction Complete")
         colA, colB = st.columns(2)
         with colA:
-            st.metric("Predicted Status", "🚨 Dropout" if pred == 1 else "✅ Enrolled")
+            st.metric("Predicted Status", f"🚨 {pred}" if pred == 'Dropout' else f"✅ {pred}")
         with colB:
-            st.metric("Dropout Probability", f"{proba*100:.1f}%")
+            st.metric("Dropout Probability", f"{dropout_probability*100:.1f}%")
+        
+        # SHAP Feature Importance
+        st.subheader("📊 Top Contributing Factors")
+        try:
+            # Get preprocessor and classifier from pipeline
+            preprocessor = model.named_steps['preprocessor']
+            classifier = model.named_steps['classifier']
+            
+            # Transform input and get feature names
+            X_transformed = preprocessor.transform(input_df)
+            feature_names = preprocessor.get_feature_names_out()
+            
+            # Calculate SHAP values
+            explainer = shap.TreeExplainer(classifier)
+            shap_values = explainer.shap_values(X_transformed)
+            
+            # Handle different SHAP output formats
+            if isinstance(shap_values, list):
+                vals = shap_values[1][0] if len(shap_values) > 1 else shap_values[0][0]
+            else:
+                if shap_values.ndim == 3:
+                    class_idx = 1 if shap_values.shape[2] > 1 else 0
+                    vals = shap_values[0, :, class_idx]
+                else:
+                    vals = shap_values[0]
+            
+            # Create contribution dict and sort
+            contrib = dict(zip(feature_names, vals))
+            sorted_contrib = sorted(contrib.items(), key=lambda x: abs(float(x[1])), reverse=True)[:5]
+            
+            # Display as a styled table
+            contrib_df = pd.DataFrame(sorted_contrib, columns=['Feature', 'Contribution'])
+            contrib_df['Impact'] = contrib_df['Contribution'].apply(
+                lambda x: '🔴 Increases Risk' if x > 0 else '🟢 Decreases Risk'
+            )
+            contrib_df['Contribution'] = contrib_df['Contribution'].round(4)
+            st.dataframe(contrib_df, use_container_width=True, hide_index=True)
+            
+            # Bar chart visualization
+            fig = px.bar(
+                contrib_df, x='Contribution', y='Feature', orientation='h',
+                color='Contribution', color_continuous_scale=['green', 'red'],
+                title='Feature Contribution to Dropout Prediction'
+            )
+            fig.update_layout(yaxis={'categoryorder': 'total ascending'})
+            st.plotly_chart(fig, use_container_width=True)
+        except Exception as e:
+            st.warning(f"Could not compute feature importance: {e}")
 
 st.caption("Streamlit App • Full EDA • Power BI Dashboard • Trained Model")
