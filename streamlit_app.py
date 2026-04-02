@@ -196,7 +196,14 @@ elif page == "📊 Full EDA":
 # ====================== POWER BI DASHBOARD ======================
 elif page == "📊 Power BI Dashboard":
     st.title("SILENT ACADEMIC DROPOUT CRISIS")
-    
+
+    # Sign Meaning Legend
+    st.info("""
+    **📋 Sign Meaning:**
+    - **+ value** → increases chance of Dropout 🔴
+    - **- value** → decreases chance of Dropout 🟢
+    """)
+
     # KPI Cards
     k1, k2, k3, k4 = st.columns(4)
     with k1: st.metric("Total Students", f"{len(df):,}", "10K")
@@ -271,19 +278,24 @@ elif page == "🔮 Predict":
         
         # SHAP Feature Importance
         st.subheader("📊 Top Contributing Factors")
+        st.info("""
+        **📋 Sign Meaning:**
+        - **+ value** → increases chance of Dropout 🔴
+        - **- value** → decreases chance of Dropout 🟢
+        """)
         try:
-            # Get preprocessor and classifier from pipeline
-            preprocessor = model.named_steps['preprocessor']
-            classifier = model.named_steps['classifier']
-            
+            # Get preprocessing and model from pipeline
+            preprocessor = model.named_steps['preprocessing']
+            rf_model = model.named_steps['model']
+
             # Transform input and get feature names
             X_transformed = preprocessor.transform(input_df)
             feature_names = preprocessor.get_feature_names_out()
-            
+
             # Calculate SHAP values
-            explainer = shap.TreeExplainer(classifier)
+            explainer = shap.TreeExplainer(rf_model)
             shap_values = explainer.shap_values(X_transformed)
-            
+
             # Handle different SHAP output formats
             if isinstance(shap_values, list):
                 vals = shap_values[1][0] if len(shap_values) > 1 else shap_values[0][0]
@@ -293,26 +305,33 @@ elif page == "🔮 Predict":
                     vals = shap_values[0, :, class_idx]
                 else:
                     vals = shap_values[0]
-            
+
             # Create contribution dict and sort
             contrib = dict(zip(feature_names, vals))
             sorted_contrib = sorted(contrib.items(), key=lambda x: abs(float(x[1])), reverse=True)[:5]
-            
+
             # Display as a styled table
             contrib_df = pd.DataFrame(sorted_contrib, columns=['Feature', 'Contribution'])
-            contrib_df['Impact'] = contrib_df['Contribution'].apply(
+            contrib_df['Impact Direction'] = contrib_df['Contribution'].apply(
                 lambda x: '🔴 Increases Risk' if x > 0 else '🟢 Decreases Risk'
             )
-            contrib_df['Contribution'] = contrib_df['Contribution'].round(4)
-            st.dataframe(contrib_df, use_container_width=True, hide_index=True)
-            
-            # Bar chart visualization
-            fig = px.bar(
-                contrib_df, x='Contribution', y='Feature', orientation='h',
-                color='Contribution', color_continuous_scale=['green', 'red'],
-                title='Feature Contribution to Dropout Prediction'
+            contrib_df['Impact Magnitude'] = contrib_df['Contribution'].abs().apply(
+                lambda x: '🔥 Strongest' if x == contrib_df['Contribution'].abs().max()
+                else ('⚡ High' if x > contrib_df['Contribution'].abs().quantile(0.5) else '→ Moderate')
             )
-            fig.update_layout(yaxis={'categoryorder': 'total ascending'})
+            contrib_df['Contribution'] = contrib_df['Contribution'].round(4)
+            st.dataframe(contrib_df[['Feature', 'Contribution', 'Impact Direction', 'Impact Magnitude']], use_container_width=True, hide_index=True)
+
+            # Bar chart visualization with sorted order
+            contrib_chart_df = contrib_df.sort_values('Contribution', ascending=True)
+            fig = px.bar(
+                contrib_chart_df, x='Contribution', y='Feature', orientation='h',
+                color='Contribution', color_continuous_scale=['green', 'yellow', 'red'],
+                color_continuous_midpoint=0,
+                title='🎯 Which Factors Impact More During Dropout',
+                labels={'Contribution': 'Impact Strength (Higher = More Impact)'}
+            )
+            fig.update_layout(yaxis={'categoryorder': 'total ascending'}, height=350)
             st.plotly_chart(fig, use_container_width=True)
         except Exception as e:
             st.warning(f"Could not compute feature importance: {e}")
