@@ -1,23 +1,105 @@
-# Only-AI
-Hackathon 2026
-## The Silent Academic Dropout Crisis
+# Only-AI 🚀
 
-**Domain:** EdTech / AI in Education
+**AI-Powered Personalized Education to Combat the Silent Academic Dropout Crisis**
 
-### Background
-India produces over 15 million graduates annually, yet a staggering proportion enter higher education without mastering foundational concepts from previous years. The traditional classroom operates on a rigid assumption — that every student sitting in the same room, taught by the same teacher, at the same pace, will achieve the same level of understanding. **This assumption is fundamentally broken.**
+[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 
-### The Problem
-When a student fails to grasp a concept — say, calculus in engineering or organic chemistry in medicine — **no system in place detects this gap at the moment it occurs.** The student moves forward with the class, the gap compounds silently, and by the time it surfaces in an exam result, months of learning have already been built on a cracked foundation.  
+## 🎯 Overview
 
-Teachers managing 60–80 students per classroom physically cannot monitor individual comprehension in real time. Coaching centers are expensive and inaccessible to students in tier-2 and tier-3 cities. YouTube and online content exist in abundance, but are completely passive — they deliver the same video to a struggling student and a top-performing student without distinction.
+**Only-AI** is an intelligent **EdTech** solution built for **Hackathon 2026** that tackles India's **"Silent Academic Dropout Crisis"**.
 
-### The Consequence
-Students lose confidence, disengage, and eventually drop out — **not because they lack intelligence**, but because the system never adapts to them.  
+It uses machine learning to predict student dropout risk in real time and provides a **personalized adaptive learning layer** that continuously maps a student’s understanding, identifies exact knowledge gaps, and dynamically rebuilds their learning path — making quality, personalized education accessible to every student regardless of location or income.
 
-The problem is not a lack of content. India has more free educational content than any student could ever consume. **The problem is the complete absence of a personalized, responsive, intelligent learning layer** that understands each student's unique knowledge state and intervenes before failure becomes inevitable.
+## 🔥 The Problem
 
-### The Challenge
-**Can we build an intelligent system that continuously maps a student's understanding, identifies the exact concept where their foundation breaks, and dynamically rebuilds their learning path in real time** — making truly personalized education accessible to every student regardless of geography, income, or institution?
+India produces over 15 million graduates annually, yet a large proportion enter higher education without mastering foundational concepts. Traditional classrooms follow a rigid, one-size-fits-all approach:
 
----
+- Teachers manage 60–80 students and cannot monitor individual comprehension in real time.
+- Gaps in understanding (e.g., calculus, organic chemistry) go undetected until exams.
+- Personalized support (coaching, tutors) is expensive and inaccessible in tier-2/3 cities.
+- Online content is abundant but completely passive and non-adaptive.
+
+**Result**: Students lose confidence, disengage, and drop out — **not because they lack intelligence, but because the system never adapts to them**.
+
+## 💡 Our Solution
+
+Only-AI builds an **intelligent personalized learning layer** that:
+
+- Predicts dropout risk using student data
+- Identifies specific knowledge gaps
+- Delivers real-time personalized interventions
+- Adapts learning paths dynamically
+
+## ✨ Key Features
+
+- **Dropout Risk Prediction** using Random Forest Classifier
+- **Interactive Streamlit Dashboard** with:
+  - Home page with key metrics
+  - Full Exploratory Data Analysis (EDA)
+  - Power BI-style visualizations
+  - Real-time **Predict** page with SHAP explainability
+- **FastAPI Backend** for model serving
+- **Comprehensive data pipeline** (cleaning → EDA → modeling)
+- **Professional Power BI dashboard** (`powerbi_project.pbix`)
+
+## 🛠 Tech Stack
+
+- **Language**: Python
+- **Machine Learning**: scikit-learn (Random Forest)
+- **Frontend**: Streamlit
+- **Backend**: FastAPI + Uvicorn
+- **Data Handling**: Pandas, NumPy
+- **Visualization**: Plotly, Matplotlib, Power BI
+- **Model Persistence**: Joblib
+- **Interpretability**: SHAP
+
+## 📁 Project Structure
+
+```bash
+Only-AI/
+├── streamlit_app.py              # Main Streamlit frontend
+├── main.py                       # FastAPI backend
+├── app.py
+├── train_model.py                # Model training script
+├── prediction_model.ipynb        # Model development & evaluation
+├── data_cleaning.ipynb
+├── EDA+data_visualisation.ipynb
+├── students_dropout.csv          # Raw dataset
+├── cleaned_students_dropout01.csv
+├── requirements.txt
+├── powerbi_project.pbix          # Power BI dashboard
+├── SETUP.md
+└── dropout_artifacts.joblib      # Trained model (generated after training)
+```
+1. Clone the Repository
+```bash
+git clone https://github.com/AmarjeetJha17/Only-AI.git
+cd Only-AI
+```
+# 📊 Dataset
+
+students_dropout.csv → Raw student demographic and performance data
+cleaned_students_dropout01.csv → Preprocessed data used for modeling
+
+# 📈 Visualizations
+
+Detailed EDA → EDA+data_visualisation.ipynb
+Interactive Power BI dashboard → powerbi_project.pbix
+
+# 🔮 Future Enhancements
+
+Real-time concept-level knowledge gap detection
+Integration with LMS platforms (Moodle, Google Classroom, etc.)
+AI-powered learning resource recommender
+Mobile app support
+Multi-language support (Hindi + regional languages)
+
+# 🤝 Contributing
+Contributions, issues, and feature requests are welcome!
+Feel free to fork the repository and submit a pull request.
+# 📄 License
+This project is open-source and available under the MIT License.
+# 🙏 Acknowledgements
+Built with ❤️ for Hackathon 2026 with the vision of making quality, personalized education truly accessible to every student in India.
